@@ -32,6 +32,13 @@ helm install simplyzee/kube-owasp-zap --name vuln-scan \
 
 This will deploy a Job that will deploy a pod on the Kubernetes platform that will perform the vulnerability scan.
 
+## Roadmap
+Still ALOT of work around platform improvements with Kubernetes but it utilises the Kubernetes platform well to scan sites from a vulnerability analysis perspective. 
+
+Ideas to implement:
+* Easier way of viewing scanning analysis
+* Zap CLI to be more configurable as a tool on the k8s platform
+
 ## Contributing
 
 Please raise an issue or pull request if you have any issues, questions or features.
