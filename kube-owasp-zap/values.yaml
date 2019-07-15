@@ -1,0 +1,34 @@
+# Default values for kube-owasp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+zapcli:
+  image:
+    repository: owasp/zap2docker-stable
+    tag: 2.8.0
+    pullPolicy: IfNotPresent
+
+  # Verbose information about a scan.
+  debug:
+    enabled: true
+
+  # What type of scans should owasp zap do?
+  # - all
+  # - sqli
+  # - xss
+  # - xss_reflected
+  # - xss_persistent
+  scanTypes:
+  - xss
+  - sqli
+
+  # Activates a spider against the host to scan through for vulnerabilities across it's sitemap
+  spider:
+    enabled: true
+
+  # Should the scan be recursive
+  recursive:
+    enabled: true
+
+  # The target host for owasp-zap to scan
+  targetHost: http://nodegoat.herokuapp.com/

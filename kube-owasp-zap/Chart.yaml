@@ -1,0 +1,14 @@
+apiVersion: v1
+appVersion: 2.8.0
+description: A Helm chart for owasp-zap
+name: kube-owasp-zap
+version: 0.1.0
+keywords:
+    - rclone
+home: https://github.com/zaproxy/zaproxy
+icon: https://banner2.kisspng.com/20180502/ozq/kisspng-owasp-zap-vulnerability-penetration-test-proxy-ser-web-application-5aea65947a30d0.0276627015253108685005.jpg
+sources:
+    - https://github.com/zee-ahmed/kube-owasp-zap
+    - https://hub.docker.com/r/owasp/zap2docker-stable/
+maintainers:
+    - name: zee-ahmed

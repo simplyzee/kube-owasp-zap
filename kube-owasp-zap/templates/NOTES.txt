@@ -1,0 +1,2 @@
+View Scan Jobs: kubectl get job --namespace {{ .Release.Namespace }}
+View Scan Pods: kubectl get pods --namespace {{ .Release.Namespace }}

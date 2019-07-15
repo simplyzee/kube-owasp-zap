@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kube-owasp.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "kube-owasp.name" . }}
+    helm.sh/chart: {{ include "kube-owasp.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kube-owasp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.zapcli.image.repository }}:{{ .Values.zapcli.image.tag }}"
+          imagePullPolicy: {{ .Values.zapcli.image.pullPolicy }}
+          args:
+            - zap-cli
+            {{- if .Values.zapcli.debug.enabled }}
+            - "--verbose"
+            {{- end }}
+            - quick-scan
+            - --self-contained
+            - --start-options
+            - '-config api.disablekey=true'
+            - "-s {{ include "helm-toolkit.utils.joinListWithComma" .Values.zapcli.scanTypes }}"
+            {{- if .Values.zapcli.spider.enabled }}
+            - --spider
+            {{- end }}
+            {{- if .Values.zapcli.recursive.enabled }}
+            - -r
+            {{- end }}
+            - "{{ .Values.zapcli.targetHost }}"
+      restartPolicy: Never
