@@ -10,7 +10,7 @@ zapcli:
 
   # Verbose information about a scan.
   debug:
-    enabled: true
+    enabled: false
 
   # What type of scans should owasp zap do?
   # - all
