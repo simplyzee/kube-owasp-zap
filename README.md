@@ -18,6 +18,18 @@ The setup guide will help you perform an owasp-zap scan using Kubernetes.
     --set zapcli.targetHost=[ URL to scan ]
 ```
 
+2. Deploy using Helm repository
+
+```bash
+helm repo add simplyzee https://charts.simplyzee.dev
+helm install simplyzee/kube-owasp-zap --name vuln-scan \
+    --namespace owasp-zap \
+    --set zapcli.debug.enabled=true \
+    --set zapcli.spider.enabled=true \
+    --set zapcli.recursive.enabled=true \
+    --set zapcli.targetHost=[ URL to scan ]
+```
+
 This will deploy a Job that will deploy a pod on the Kubernetes platform that will perform the vulnerability scan.
 
 ## Contributing
