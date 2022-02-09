@@ -30,7 +30,7 @@ EOF
 * Assign the URL to scan. Since ibm.com is used, the spidering and recursive scanning has been turned off.
 
 ```bash
-export URL_TO_SCAN="http://www.ibm.com"
+export URL_TO_SCAN="http://nodegoat.herokuapp.com"
 ```
 
 ### Option A - Deploy With GibHub Project
@@ -81,7 +81,7 @@ vuln-scan-2020-03-20-10-46-14-job-kube-owasp-zap   1/1           33s        30m
 [DEBUG]           Starting ZAP process with command: /zap/zap.sh -daemon -port 8080 -config api.disablekey=true.
 [DEBUG]           Logging to /zap/zap.log
 [DEBUG]           ZAP started successfully.
-[INFO]            Running a quick scan for https://www.ibm.com
+[INFO]            Running a quick scan for http://nodegoat.herokuapp.com
 [DEBUG]           Disabling all current scanners
 [DEBUG]           Enabling scanners with IDs 40012,40014,40016,40017,40018
 [DEBUG]           Scanning target https://www.ibm.com...
