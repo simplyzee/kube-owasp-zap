@@ -1,0 +1,27 @@
+# CI: scheduled full scan with rule config, persisted reports and tuning.
+schedule: "0 2 * * 1"
+cronJob:
+  timeZone: Europe/London
+scan:
+  target: https://test.example.com
+  type: full
+  spiderMinutes: 5
+  ajaxSpider: true
+  failOnWarnings: true
+  maxMinutes: 60
+  rulesConfig: |
+    10021	FAIL	(X-Content-Type-Options Header Missing)
+    10038	WARN	(Content Security Policy Header Not Set)
+  zapOptions: "-config connection.timeoutInSecs=120"
+report:
+  formats: [html, json, md, xml]
+  persistence:
+    enabled: true
+    storageClass: standard
+podAnnotations:
+  example.com/team: security
+tolerations:
+  - key: dedicated
+    operator: Equal
+    value: scanners
+    effect: NoSchedule

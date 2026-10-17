@@ -1,0 +1,20 @@
+{{- if and .Values.report.persistence.enabled (not .Values.report.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kube-owasp.fullname" . }}-reports
+  labels:
+    {{- include "kube-owasp.labels" . | nindent 4 }}
+  annotations:
+    # Keep past reports if the release is uninstalled.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml .Values.report.persistence.accessModes | nindent 4 }}
+  {{- with .Values.report.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.report.persistence.size }}
+{{- end }}

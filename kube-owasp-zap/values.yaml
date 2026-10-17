@@ -1,48 +1,118 @@
-# Default values for kube-owasp.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-imagePullSecrets:
-- name: hofcicd-regcred
+# Default values for kube-owasp-zap.
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 1
-  #   memory: 2048Mi
-  # requests:
-  #   cpu: 300m
-  #   memory: 512Mi
+image:
+  # Official ZAP stable image (also available as ghcr.io/zaproxy/zaproxy:stable).
+  repository: zaproxy/zap-stable
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
 
-zapcli:
-  image:
-    repository: owasp/zap2docker-stable
-    tag: 2.8.0
-    pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
-  # Verbose information about a scan.
-  debug:
+scan:
+  # Only scan sites you own or have written permission to test.
+  # Required. For api scans this is the OpenAPI/SOAP definition URL or GraphQL endpoint.
+  target: ""
+
+  # baseline: passive, safe for production (spiders, then reports issues it can see)
+  # full:     active attacks (SQL injection, XSS...). Use on test environments only
+  # api:      scans an API from its OpenAPI, SOAP or GraphQL definition
+  type: baseline
+
+  # api scans only: openapi, soap or graphql
+  apiFormat: openapi
+
+  # Minutes to spider the target (baseline and full).
+  spiderMinutes: 1
+  # Also run the Ajax spider for JavaScript-heavy apps (baseline and full).
+  ajaxSpider: false
+  # Include alpha-quality scan rules.
+  includeAlpha: false
+  # Fail the Job on WARN alerts as well as FAIL alerts.
+  failOnWarnings: false
+  # Upper limit, in minutes, for ZAP to start and finish passive scanning (0 = ZAP default).
+  maxMinutes: 0
+  # Print ZAP debug output.
+  debug: false
+
+  # Optional rule config: tab-separated "<rule id>\t<IGNORE|INFO|WARN|FAIL>\t<name>" lines.
+  # Generate a starting point with: docker run zaproxy/zap-stable zap-baseline.py -t <url> -g gen.conf
+  rulesConfig: ""
+    # 10021	FAIL	(X-Content-Type-Options Header Missing)
+    # 10038	WARN	(Content Security Policy Header Not Set)
+
+  # Extra ZAP options passed with -z, e.g. "-config connection.timeoutInSecs=120".
+  zapOptions: ""
+  # Any other arguments for the scan script.
+  extraArgs: []
+
+report:
+  # Reports written for each scan. Any of: html, json, md, xml
+  formats:
+    - html
+    - json
+    - md
+  # Print the Markdown report to the pod log when the scan finishes.
+  printToLog: true
+  # Keep reports in a PersistentVolumeClaim. Otherwise they live only as long as the pod.
+  persistence:
     enabled: false
+    existingClaim: ""
+    size: 1Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
 
-  # What type of scans should owasp zap do?
-  # - all
-  # - sqli
-  # - xss
-  # - xss_reflected
-  # - xss_persistent
-  scanTypes:
-  - xss
-  - sqli
+# Cron schedule for recurring scans, e.g. "0 2 * * 1" (02:00 every Monday).
+# Empty runs a single scan as a Job; run it again with `helm upgrade`.
+schedule: ""
 
-  # Activates a spider against the host to scan through for vulnerabilities across it's sitemap
-  spider:
-    enabled: true
+cronJob:
+  timeZone: ""
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  suspend: false
 
-  # Should the scan be recursive
-  recursive:
-    enabled: true
+job:
+  # A scan that finds FAIL alerts exits non-zero; don't retry it.
+  backoffLimit: 0
+  # Stop a scan that runs longer than this.
+  activeDeadlineSeconds: 3600
+  # Delete finished Jobs (and their logs) after this many seconds. 604800 = 7 days.
+  ttlSecondsAfterFinished: 604800
 
-  # The target host for owasp-zap to scan
-  targetHost: http://nodegoat.herokuapp.com/
+# The scanner doesn't talk to the Kubernetes API.
+automountServiceAccountToken: false
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# ZAP runs on the JVM and needs some headroom.
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
+podAnnotations: {}
+podLabels: {}
+
+nodeSelector:
+  kubernetes.io/os: linux
+tolerations: []
+affinity: {}

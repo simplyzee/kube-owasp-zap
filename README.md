@@ -1,106 +1,37 @@
 # kube-owasp-zap
 
-## Introduction
+kube-owasp-zap runs [OWASP ZAP](https://www.zaproxy.org) security scans from inside your Kubernetes cluster. Point it at a web app or API you own, and it runs ZAP's packaged baseline, full or API scan as a Job, or on a schedule as a CronJob. The results go to the pod log and to HTML, JSON and Markdown reports.
 
-kube-owasp-zap is an owasp-zap solution for Kubernetes. It allows you to perform a vulnerability analysis on a host using Kubernetes as the platform. It creates a Job that deploys a pod that will scan the host for any vulnerabilities.
+> Only scan sites you own or have written permission to test.
 
-## Setup
-
-The following shows how to perform an owasp-zap scan using Kubernetes. There are two ways to deploy. Either use this Github project (Option A) or use a Helm repository (Option B) which is a little easier.
-
-This project runs the owasp-zap tool as a Kubernetes job. Each job needs to have a unique name. That's why the name is uniquified using a timestamp.
-
-Kubernetes jobs are not automatically reaped so that you can still see their logs when they are complete. It this case, that is good because the result of the owasp-zap scan are in the logs.
-
-### Prequisite
-
-* Create a namespace.
+## Quick start
 
 ```bash
-kubectl apply -f -<<EOF
-apiVersion: v1
-kind: Namespace
-metadata:
-    name: owasp-zap
-    labels:
-        name: owasp-zap
-EOF
+helm repo add simplyzee https://charts.simplyzee.dev
+helm repo update
+
+helm install zap simplyzee/kube-owasp-zap \
+  --namespace zap --create-namespace \
+  --set scan.target=https://staging.example.com
+
+kubectl logs -n zap -f job/zap-kube-owasp-zap-1
 ```
 
-* Assign the URL to scan. Since ibm.com is used, the spidering and recursive scanning has been turned off.
+Run the scan again with `helm upgrade zap simplyzee/kube-owasp-zap -n zap --reuse-values`. To install from this repo instead, use `./kube-owasp-zap` in place of `simplyzee/kube-owasp-zap`.
 
-```bash
-export URL_TO_SCAN="http://nodegoat.herokuapp.com"
-```
+Scan types, scheduling, reports, rule tuning and every setting are covered in the [chart README](kube-owasp-zap/README.md).
 
-### Option A - Deploy With GibHub Project
+## What's in 0.2.0
 
-* Deploy the kube-owasp-zap chart with the values set for type of scan and target host.
-
-```bash
-> helm install "vuln-scan-$(date '+%Y-%m-%d-%H-%M-%S')-job" ./kube-owasp-zap \
-    --namespace owasp-zap \
-    --set zapcli.debug.enabled=true \
-    --set zapcli.spider.enabled=false \
-    --set zapcli.recursive.enabled=false \
-    --set zapcli.targetHost=$URL_TO_SCAN
-```
-
-### Option B - Using Helm
-
-* Add the Helm repository. Then install the chart.
-
-```bash
-> helm repo add simplyzee https://charts.simplyzee.dev
-
-> helm install "vuln-scan-$(date '+%Y-%m-%d-%H-%M-%S')-job" simplyzee/kube-owasp-zap \
-    --namespace owasp-zap \
-    --set zapcli.debug.enabled=true \
-    --set zapcli.spider.enabled=false \
-    --set zapcli.recursive.enabled=false \
-    --set zapcli.targetHost=$URL_TO_SCAN
-```
-
-This will deploy a Job that will deploy a pod on the Kubernetes platform that will perform the vulnerability scan.
-
-## Example of Job Output
-
-* Use the following command to view the list of jobs. Since the job names have a timestamp, we can use `sort` to force newer jobs to the end of the list.
-
-```bash
-> kubectl get jobs --namespace owasp-zap | grep -v "COMPLETIONS" | sort
-vuln-scan-2020-03-20-11-10-17-job-kube-owasp-zap   1/1           22s        6m53s
-vuln-scan-2020-03-20-10-46-14-job-kube-owasp-zap   1/1           33s        30m
-```
-
-* Use the following command to view the logs of a job.
-
-```bash
-> kubectl logs jobs/vuln-scan-2020-03-20-11-10-17-job-kube-owasp-zap --namespace owasp-zap
-[INFO]            Starting ZAP daemon
-[DEBUG]           Starting ZAP process with command: /zap/zap.sh -daemon -port 8080 -config api.disablekey=true.
-[DEBUG]           Logging to /zap/zap.log
-[DEBUG]           ZAP started successfully.
-[INFO]            Running a quick scan for http://nodegoat.herokuapp.com
-[DEBUG]           Disabling all current scanners
-[DEBUG]           Enabling scanners with IDs 40012,40014,40016,40017,40018
-[DEBUG]           Scanning target https://www.ibm.com...
-[DEBUG]           Started scan with ID 0...
-[DEBUG]           Scan progress %: 0
-[DEBUG]           Scan #0 completed
-[INFO]            Issues found: 0
-[INFO]            Shutting down ZAP daemon
-[DEBUG]           Shutting down ZAP.
-[DEBUG]           ZAP shutdown successfully.
-```
-
-## Roadmap
-
-Still a lot of work around platform improvements with Kubernetes but it utilises the Kubernetes platform well to scan sites from a vulnerability analysis perspective. 
-
-Ideas to implement:
-* Easier way of viewing scanning analysis
-* Zap CLI to be more configurable as a tool on the k8s platform
+- **Works with current ZAP.** It uses the official `zaproxy/zap-stable` image (2.17.0) and ZAP's packaged scans. The old `zap-cli` isn't shipped in ZAP images any more.
+- **Three scan types:** a passive `baseline` (the default, and safe for production), an active `full` scan, and an `api` scan from OpenAPI, SOAP or GraphQL definitions.
+- **Scheduled scans:** set `schedule` to get a CronJob, with time zone support.
+- **Reports:** HTML, JSON, Markdown and XML, with the Markdown report printed to the log and optional persistence to a volume.
+- **Clear results:** the Job fails when ZAP finds FAIL alerts (optionally WARN too), so you can alert on it. Rules can be tuned with a config file.
+- **Easy re-runs:** `helm upgrade` creates a fresh Job, and old Jobs clean themselves up.
+- **Locked down:** runs as non-root, no privilege escalation, all capabilities dropped, and no Kubernetes API token.
+- **Safer defaults:** no default target, and clear errors for missing or invalid settings. The bundled private pull secret is gone.
+- **CI:** strict lint, schema validation, shell checks of the scan script, and a real scan in a throwaway kind cluster on every change.
 
 ## Contributing
 

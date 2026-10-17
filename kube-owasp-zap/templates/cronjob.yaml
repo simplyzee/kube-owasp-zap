@@ -1,0 +1,29 @@
+{{- include "kube-owasp.validate" . -}}
+{{- if .Values.schedule }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "kube-owasp.fullname" . }}
+  labels:
+    {{- include "kube-owasp.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  {{- with .Values.cronJob.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: {{ .Values.cronJob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.cronJob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronJob.failedJobsHistoryLimit }}
+  suspend: {{ .Values.cronJob.suspend }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "kube-owasp.labels" . | nindent 8 }}
+    spec:
+      backoffLimit: {{ .Values.job.backoffLimit }}
+      {{- with .Values.job.activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ . }}
+      {{- end }}
+      template:
+        {{- include "kube-owasp.podTemplate" . | nindent 8 }}
+{{- end }}

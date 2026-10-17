@@ -1,0 +1,113 @@
+name: chart
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
+
+      - name: helm lint (every CI values file)
+        run: |
+          for f in kube-owasp-zap/ci/*.yaml; do
+            echo "::group::helm lint -f $f"
+            helm lint kube-owasp-zap --strict -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Render and validate against Kubernetes schemas
+        run: |
+          for f in kube-owasp-zap/ci/*.yaml; do
+            echo "::group::$f"
+            helm template test kube-owasp-zap -f "$f" > rendered.yaml
+            cat rendered.yaml
+            kubeconform -strict -summary -kubernetes-version 1.30.0 rendered.yaml
+            echo "::endgroup::"
+          done
+
+      - name: Rendered scan scripts are valid shell
+        run: |
+          for f in kube-owasp-zap/ci/*.yaml; do
+            echo "::group::$f"
+            helm template test kube-owasp-zap -f "$f" | python3 .github/scripts/check-scan-scripts.py
+            echo "::endgroup::"
+          done
+
+      - name: Missing or bad values fail with clear messages
+        run: |
+          expect_fail() {
+            if helm template test kube-owasp-zap "$@" > /dev/null 2> err.txt; then
+              echo "expected failure for: $*"; exit 1
+            fi
+            cat err.txt
+          }
+          expect_fail
+          grep -q "set scan.target" err.txt
+          expect_fail --set scan.target=example.com
+          grep -q "must start with http" err.txt
+          expect_fail --set scan.target=https://example.com --set scan.type=nuke
+          expect_fail --set scan.target=https://example.com --set scan.type=api --set scan.apiFormat=wsdl
+
+      - name: Package
+        run: helm package kube-owasp-zap --destination dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kube-owasp-zap-chart
+          path: dist/*.tgz
+
+  smoke-test:
+    # Runs a real baseline scan in a throwaway kind cluster against a local web server.
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - uses: helm/kind-action@v1
+
+      - name: Deploy a test target
+        run: |
+          kubectl create deployment target --image=nginx:alpine --port=80
+          kubectl expose deployment target --port=80
+          kubectl rollout status deployment/target --timeout=120s
+
+      - name: Run a baseline scan with the chart
+        run: |
+          helm install zap kube-owasp-zap \
+            --set scan.target=http://target.default.svc.cluster.local \
+            --set scan.maxMinutes=5 \
+            --set resources.requests.cpu=100m
+          kubectl wait --for=condition=complete job/zap-kube-owasp-zap-1 --timeout=900s || {
+            kubectl describe job/zap-kube-owasp-zap-1
+            kubectl logs job/zap-kube-owasp-zap-1 || true
+            exit 1
+          }
+
+      - name: Scan produced a report
+        run: |
+          kubectl logs job/zap-kube-owasp-zap-1 | tee scan.log
+          grep -q "Scan finished with exit code 0" scan.log
+          grep -q "===== ZAP report =====" scan.log
+          grep -Eq "zap-[0-9]{8}-[0-9]{6}\.html" scan.log
+
+      - name: Re-running with helm upgrade creates a new Job
+        run: |
+          helm upgrade zap kube-owasp-zap --reuse-values
+          kubectl get job zap-kube-owasp-zap-2

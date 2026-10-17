@@ -1,18 +1,23 @@
-apiVersion: v1
-appVersion: 2.8.0
-description: A Helm chart for owasp-zap
+apiVersion: v2
 name: kube-owasp-zap
-version: 0.1.1
+description: Run OWASP ZAP security scans (baseline, full or API) against your own web apps as Kubernetes Jobs or scheduled CronJobs
+type: application
+version: 0.2.0
+appVersion: "2.17.0"
+kubeVersion: ">=1.25.0-0"
 keywords:
-    - owasp
-    - zap
-    - security
-home: https://github.com/zaproxy/zaproxy
-icon: https://banner2.kisspng.com/20180502/ozq/kisspng-owasp-zap-vulnerability-penetration-test-proxy-ser-web-application-5aea65947a30d0.0276627015253108685005.jpg
+  - owasp
+  - zap
+  - zaproxy
+  - security
+  - dast
+  - vulnerability-scanning
+  - cronjob
+home: https://github.com/simplyzee/kube-owasp-zap
 sources:
-    - https://github.com/simplyzee/kube-owasp-zap
-    - https://hub.docker.com/r/owasp/zap2docker-stable/
+  - https://github.com/simplyzee/kube-owasp-zap
+  - https://github.com/zaproxy/zaproxy
 maintainers:
-    - name: simplyzee
-      email: zee@simplyzee.dev
-      url: https://simplyzee.dev
+  - name: simplyzee
+    email: zee@simplyzee.dev
+    url: https://simplyzee.dev
