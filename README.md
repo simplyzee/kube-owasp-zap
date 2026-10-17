@@ -46,14 +46,14 @@ export URL_TO_SCAN="http://nodegoat.herokuapp.com"
     --set zapcli.targetHost=$URL_TO_SCAN
 ```
 
-### Option B - Using Using Helm
+### Option B - Using Helm
 
 * Add the Helm repository. Then install the chart.
 
 ```bash
 > helm repo add simplyzee https://charts.simplyzee.dev
 
-> helm install "vuln-scan-$(date '+%Y-%m-%d-%H-%M-%S')-job" implyzee/kube-owasp-zap \
+> helm install "vuln-scan-$(date '+%Y-%m-%d-%H-%M-%S')-job" simplyzee/kube-owasp-zap \
     --namespace owasp-zap \
     --set zapcli.debug.enabled=true \
     --set zapcli.spider.enabled=false \

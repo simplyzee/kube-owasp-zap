@@ -16,4 +16,4 @@ The following tables lists the configurable parameters of the kube-owasp-zap cha
 | `zapcli.targetHost`         | URL to scan | `http://nodegoat.herokuapp.com/` |
 
 
-Read through the [values.yaml](https://github.com/zee-ahmed/kube-owasp-zap/blob/master/kube-owasp-zap/values.yaml) file. It has several commented out suggested values.
+Read through the [values.yaml](https://github.com/simplyzee/kube-owasp-zap/blob/master/kube-owasp-zap/values.yaml) file. It has several commented out suggested values.
