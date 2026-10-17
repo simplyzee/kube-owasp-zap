@@ -47,6 +47,9 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Artifact Hub image list matches the chart
+        run: python3 .github/scripts/check-artifacthub-images.py kube-owasp-zap kube-owasp-zap/ci/baseline-values.yaml kube-owasp-zap/ci/full-scheduled-values.yaml kube-owasp-zap/ci/api-values.yaml
+
       - name: Missing or bad values fail with clear messages
         run: |
           expect_fail() {

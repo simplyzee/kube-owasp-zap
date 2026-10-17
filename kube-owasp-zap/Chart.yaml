@@ -2,7 +2,7 @@ apiVersion: v2
 name: kube-owasp-zap
 description: Run OWASP ZAP security scans (baseline, full or API) against your own web apps as Kubernetes Jobs or scheduled CronJobs
 type: application
-version: 0.2.0
+version: 0.2.1
 appVersion: "2.17.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
@@ -21,3 +21,18 @@ maintainers:
   - name: simplyzee
     email: zee@simplyzee.dev
     url: https://simplyzee.dev
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: Apache-2.0
+  # Keep in sync with values.yaml; CI checks this matches the rendered chart.
+  artifacthub.io/images: |
+    - name: zap
+      image: zaproxy/zap-stable:2.17.0
+  artifacthub.io/links: |
+    - name: support
+      url: https://github.com/simplyzee/kube-owasp-zap/issues
+    - name: ZAP packaged scans
+      url: https://www.zaproxy.org/docs/docker/
+  artifacthub.io/changes: |
+    - kind: added
+      description: Artifact Hub metadata so security scans check the image the chart actually uses
