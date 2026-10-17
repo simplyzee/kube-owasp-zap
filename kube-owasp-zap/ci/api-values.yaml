@@ -1,0 +1,15 @@
+# CI: API scan from an OpenAPI definition, existing PVC, no TTL.
+scan:
+  type: api
+  apiFormat: openapi
+  target: https://api.example.com/openapi.json
+  extraArgs:
+    - -O
+    - https://api.example.com
+report:
+  printToLog: false
+  persistence:
+    enabled: true
+    existingClaim: zap-reports
+job:
+  ttlSecondsAfterFinished: null

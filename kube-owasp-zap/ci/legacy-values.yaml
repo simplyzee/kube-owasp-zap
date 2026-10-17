@@ -1,0 +1,9 @@
+# CI: a 0.1.x-style values file still renders.
+zapcli:
+  image:
+    repository: zaproxy/zap-stable
+    tag: "2.17.0"
+    pullPolicy: Always
+  debug:
+    enabled: true
+  targetHost: https://legacy.example.com/

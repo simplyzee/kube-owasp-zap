@@ -1,2 +1,31 @@
-View Scan Jobs: kubectl get job --namespace {{ .Release.Namespace }}
-View Scan Pods: kubectl get pods --namespace {{ .Release.Namespace }}
+{{- $target := include "kube-owasp.target" . -}}
+{{- if .Values.schedule }}
+A {{ .Values.scan.type }} ZAP scan of {{ $target }} is scheduled: "{{ .Values.schedule }}"{{ with .Values.cronJob.timeZone }} ({{ . }}){{ end }}.
+
+Run it now instead of waiting:
+
+  kubectl create job --namespace {{ .Release.Namespace }} --from=cronjob/{{ include "kube-owasp.fullname" . }} {{ include "kube-owasp.fullname" . }}-manual-$(date +%s)
+{{- else }}
+A {{ .Values.scan.type }} ZAP scan of {{ $target }} is running.
+
+Follow it:
+
+  kubectl logs --namespace {{ .Release.Namespace }} -f job/{{ include "kube-owasp.fullname" . }}-{{ .Release.Revision }}
+
+Run it again later (creates a fresh Job):
+
+  helm upgrade {{ .Release.Name }} <chart> --namespace {{ .Release.Namespace }} --reuse-values
+{{- end }}
+
+List scans and their results:
+
+  kubectl get jobs --namespace {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+A Job marked Failed means ZAP found FAIL alerts{{ if .Values.scan.failOnWarnings }} or WARN alerts{{ end }}; the summary is in its log.
+{{- if .Values.report.persistence.enabled }}
+Reports (zap-<timestamp>.{{ join "/" .Values.report.formats }}) are saved in the PVC {{ .Values.report.persistence.existingClaim | default (printf "%s-reports" (include "kube-owasp.fullname" .)) }}.
+{{- end }}
+{{- if eq .Values.scan.type "full" }}
+
+Note: a full scan actively attacks the target. Only run it against sites you own or have permission to test, ideally not production.
+{{- end }}

@@ -1,45 +1,22 @@
+{{- include "kube-owasp.validate" . -}}
+{{- if not .Values.schedule }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "kube-owasp.fullname" . }}
+  # The revision suffix gives every `helm upgrade` a fresh Job, so a scan
+  # can be re-run without changing the release name.
+  name: {{ include "kube-owasp.fullname" . }}-{{ .Release.Revision }}
   labels:
-    app.kubernetes.io/name: {{ include "kube-owasp.name" . }}
-    helm.sh/chart: {{ include "kube-owasp.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- include "kube-owasp.labels" . | nindent 4 }}
 spec:
-  backoffLimit: 0
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  {{- with .Values.job.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ . }}
+  {{- end }}
+  {{- $ttl := index .Values.job "ttlSecondsAfterFinished" }}
+  {{- if not (kindIs "invalid" $ttl) }}
+  ttlSecondsAfterFinished: {{ int $ttl }}
+  {{- end }}
   template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: {{ include "kube-owasp.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
-    spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.zapcli.image.repository }}:{{ .Values.zapcli.image.tag }}"
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          imagePullPolicy: {{ .Values.zapcli.image.pullPolicy }}
-          args:
-            - zap-cli
-            {{- if .Values.zapcli.debug.enabled }}
-            - "--verbose"
-            {{- end }}
-            - quick-scan
-            - --self-contained
-            - --start-options
-            - '-config api.disablekey=true'
-            - "-s {{ include "helm-toolkit.utils.joinListWithComma" .Values.zapcli.scanTypes }}"
-            {{- if .Values.zapcli.spider.enabled }}
-            - --spider
-            {{- end }}
-            {{- if .Values.zapcli.recursive.enabled }}
-            - -r
-            {{- end }}
-            - "{{ .Values.zapcli.targetHost }}"
-      restartPolicy: Never
+    {{- include "kube-owasp.podTemplate" . | nindent 4 }}
+{{- end }}
